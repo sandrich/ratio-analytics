@@ -21,6 +21,7 @@ import { SortinoRatioTable } from './SortinoRatioTable';
 import { TokenSelectionPanel } from './TokenSelectionPanel';
 import { TimeframeConfiguration } from './TimeframeConfiguration';
 import { Button } from './ui/button';
+import { Copy as CopyIcon, Check } from 'lucide-react';
 
 // Default configuration
 const DEFAULT_TIMEFRAMES = [90, 180, 365, 990, 2000];
@@ -67,6 +68,19 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
     totalTokens: number;
     dataSource: string;
   } | null>(null);
+
+  // Donations UI state
+  const DONATION_ADDRESS = '0x4a95631d36d86d839a8d9e39322c86912212e58d';
+  const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const handleCopyAddress = useCallback(() => {
+    navigator.clipboard.writeText(DONATION_ADDRESS).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {
+      // no-op
+    });
+  }, []);
 
   // Data loading hook
   const { 
@@ -456,6 +470,51 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
                   <strong>Note:</strong> Colors show relative performance within the selected tokens and timeframes. Higher Omega, Sharpe, and Sortino ratios indicate better risk-adjusted returns.
                 </div>
               </div>
+            </div>
+
+            {/* Donations Card */}
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 mt-6">
+              <h3 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2">
+                <span className="text-red-500">❤️</span>
+                Support the Project
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                If this service helps your research, you can support it with a small crypto donation.
+              </p>
+              <div className="flex justify-center">
+                <code className="block w-full text-center text-sm px-3 py-2 rounded border bg-muted/50 select-all whitespace-nowrap overflow-x-auto">
+                  {DONATION_ADDRESS}
+                </code>
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleCopyAddress}
+                  title="Copy address"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                </Button>
+                <button
+                  className="text-xs underline text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowQR(v => !v)}
+                  title={showQR ? 'Hide QR' : 'Show QR'}
+                >
+                  {showQR ? 'Hide QR code' : 'Show QR code'}
+                </button>
+              </div>
+              {showQR && (
+                <div className="mt-4 flex justify-center">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(DONATION_ADDRESS)}`}
+                    alt="Donation address QR code"
+                    className="rounded border bg-white p-2"
+                    width={140}
+                    height={140}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
