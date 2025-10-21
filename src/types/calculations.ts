@@ -16,6 +16,7 @@ export interface CalculationResult {
   timeframe: number;
   omegaRatio: number;
   sharpeRatio: number;
+  sortinoRatio: number;
   returns: number[];
   volatility: number;
 }
@@ -27,16 +28,20 @@ export interface TokenData {
   selected: boolean;
   omegaRatios: Record<number, number>; // timeframe -> ratio
   sharpeRatios: Record<number, number>; // timeframe -> ratio
+  sortinoRatios: Record<number, number>; // timeframe -> ratio
   normalizedOmega: Record<number, number>;
   normalizedSharpe: Record<number, number>;
+  normalizedSortino: Record<number, number>;
   averageOmegaScore: number;
   averageSharpeScore: number;
+  averageSortinoScore: number;
   overallAverageScore: number; // Combined average for overall ranking
 }
 
 export interface PerformanceMetrics {
   omegaRatio: number;
   sharpeRatio: number;
+  sortinoRatio: number;
   returns: number[];
   volatility: number;
   drawdown: number;

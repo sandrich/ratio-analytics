@@ -66,6 +66,72 @@ export class CalculationService {
   }
 
   /**
+   * Calculate Sortino ratio from returns
+   * Sortino = (Expected return - Risk-free rate) / Downside deviation
+   * 
+   * @param returns Array of return values (as decimals)
+   * @param riskFreeRate Risk-free rate (default: 0.02 for 2% annual)
+   * @returns Sortino ratio value
+   */
+  static calculateSortinoRatio(returns: number[], riskFreeRate: number = 0.02): number {
+    // Handle edge cases
+    if (!returns || returns.length === 0) {
+      throw new Error('Returns array cannot be empty');
+    }
+
+    if (returns.some(r => !isFinite(r))) {
+      throw new Error('Returns array contains invalid values (NaN or Infinity)');
+    }
+
+    // Filter out any potential NaN or infinite values for safety
+    const validReturns = returns.filter(r => isFinite(r));
+    
+    if (validReturns.length === 0) {
+      throw new Error('No valid returns found after filtering');
+    }
+
+    if (validReturns.length === 1) {
+      // Cannot calculate downside deviation with only one return
+      return 0;
+    }
+
+    // Calculate mean return
+    const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
+    
+    // Annualize the mean return (assuming daily returns, multiply by ~252 trading days)
+    const annualizedReturn = meanReturn * 252;
+    
+    // Calculate downside deviation (only negative returns below the risk-free rate)
+    const downsideReturns = validReturns.filter(r => r < riskFreeRate / 252); // Convert annual risk-free rate to daily
+    
+    if (downsideReturns.length === 0) {
+      // If no downside returns, Sortino ratio is infinite (or very high)
+      return annualizedReturn > riskFreeRate ? Number.POSITIVE_INFINITY : 0;
+    }
+    
+    // Calculate downside deviation
+    const downsideVariance = downsideReturns.reduce((sum, r) => {
+      const diff = r - (riskFreeRate / 252); // Daily risk-free rate
+      return sum + (diff * diff);
+    }, 0) / downsideReturns.length;
+    
+    const downsideDeviation = Math.sqrt(downsideVariance);
+    
+    // Annualize the downside deviation (multiply by sqrt of 252 trading days)
+    const annualizedDownsideDeviation = downsideDeviation * Math.sqrt(252);
+    
+    // Handle edge case where downside deviation is zero
+    if (annualizedDownsideDeviation === 0) {
+      return annualizedReturn > riskFreeRate ? Number.POSITIVE_INFINITY : 0;
+    }
+
+    const sortinoRatio = (annualizedReturn - riskFreeRate) / annualizedDownsideDeviation;
+    
+    // Ensure we return a finite number
+    return isFinite(sortinoRatio) ? sortinoRatio : 0;
+  }
+
+  /**
    * Calculate Sharpe ratio from returns
    * Sharpe = (Expected return - Risk-free rate) / Standard deviation of returns
    * 
@@ -363,6 +429,7 @@ export class CalculationService {
     // Calculate ratios
     const omegaRatio = this.calculateOmegaRatio(returns, threshold);
     const sharpeRatio = this.calculateSharpeRatio(returns, riskFreeRate);
+    const sortinoRatio = this.calculateSortinoRatio(returns, riskFreeRate);
     const volatility = this.calculateVolatility(returns);
     
     // Calculate maximum drawdown
@@ -371,6 +438,7 @@ export class CalculationService {
     return {
       omegaRatio,
       sharpeRatio,
+      sortinoRatio,
       returns,
       volatility,
       drawdown

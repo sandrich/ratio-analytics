@@ -17,6 +17,7 @@ import { CalculationService } from '../services/calculationService';
 import { cryptoDataService } from '../services/cryptoDataService';
 import { OmegaRatioTable } from './OmegaRatioTable';
 import { SharpeRatioTable } from './SharpeRatioTable';
+import { SortinoRatioTable } from './SortinoRatioTable';
 import { TokenSelectionPanel } from './TokenSelectionPanel';
 import { TimeframeConfiguration } from './TimeframeConfiguration';
 import { Button } from './ui/button';
@@ -141,6 +142,7 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
         // Calculate ratios for each timeframe
         const omegaRatios: Record<number, number> = {};
         const sharpeRatios: Record<number, number> = {};
+        const sortinoRatios: Record<number, number> = {};
 
         for (const timeframe of timeframes) {
           // Skip if token doesn't have enough data for this timeframe
@@ -159,10 +161,11 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
               timeframe
             );
             
-            console.log(`DEBUG: ${tokenId} ${timeframe}d - Omega: ${metrics.omegaRatio}, Sharpe: ${metrics.sharpeRatio}`);
+            console.log(`DEBUG: ${tokenId} ${timeframe}d - Omega: ${metrics.omegaRatio}, Sharpe: ${metrics.sharpeRatio}, Sortino: ${metrics.sortinoRatio}`);
             
             omegaRatios[timeframe] = metrics.omegaRatio;
             sharpeRatios[timeframe] = metrics.sharpeRatio;
+            sortinoRatios[timeframe] = metrics.sortinoRatio;
           } catch (error) {
             console.error(`ERROR: Failed to calculate metrics for ${tokenId} at ${timeframe} days:`, error);
             // Skip this timeframe on error instead of setting to 0
@@ -179,10 +182,13 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
           selected: true,
           omegaRatios,
           sharpeRatios,
+          sortinoRatios,
           normalizedOmega: {},
           normalizedSharpe: {},
+          normalizedSortino: {},
           averageOmegaScore: 0,
           averageSharpeScore: 0,
+          averageSortinoScore: 0,
           overallAverageScore: 0
         });
       }
@@ -241,12 +247,39 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
           }
         }
         
+        // Normalize Sortino ratios for smooth color gradients
+        for (const timeframe of timeframes) {
+          const sortinoValues = calculatedTokenData
+            .map(token => token.sortinoRatios[timeframe])
+            .filter(val => val !== undefined) as number[];
+          
+          if (sortinoValues.length > 0) {
+            // Use min-max normalization for smooth color gradients
+            const min = Math.min(...sortinoValues);
+            const max = Math.max(...sortinoValues);
+            const range = max - min;
+            
+            let valueIndex = 0;
+            calculatedTokenData.forEach(token => {
+              if (token.sortinoRatios[timeframe] !== undefined) {
+                const rawValue = token.sortinoRatios[timeframe];
+                // Normalize to 0-1 range, then scale to -3 to +3 for color coding
+                const normalized = range > 0 ? (rawValue - min) / range : 0.5;
+                const colorScore = (normalized - 0.5) * 6; // Maps 0-1 to -3 to +3
+                token.normalizedSortino[timeframe] = colorScore;
+                valueIndex++;
+              }
+            });
+          }
+        }
+        
 
 
         // Calculate average raw ratios for ranking
         calculatedTokenData.forEach(token => {
           const omegaValues = Object.values(token.omegaRatios);
           const sharpeValues = Object.values(token.sharpeRatios);
+          const sortinoValues = Object.values(token.sortinoRatios);
           
           token.averageOmegaScore = omegaValues.length > 0
             ? omegaValues.reduce((sum, val) => sum + val, 0) / omegaValues.length
@@ -256,8 +289,12 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
             ? sharpeValues.reduce((sum, val) => sum + val, 0) / sharpeValues.length
             : 0;
             
-          // Overall average for ranking (equal weight to both ratios)
-          const validValues = [...omegaValues, ...sharpeValues];
+          token.averageSortinoScore = sortinoValues.length > 0
+            ? sortinoValues.reduce((sum, val) => sum + val, 0) / sortinoValues.length
+            : 0;
+            
+          // Overall average for ranking (equal weight to all three ratios)
+          const validValues = [...omegaValues, ...sharpeValues, ...sortinoValues];
           token.overallAverageScore = validValues.length > 0
             ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length
             : 0;
@@ -337,7 +374,7 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
                 Ratio Analytics
               </h1>
               <p className="text-gray-600 mb-2">
-                Advanced portfolio risk analysis using Omega and Sharpe ratios across multiple timeframes
+                Advanced portfolio risk analysis using Omega, Sharpe, and Sortino ratios across multiple timeframes
               </p>
               {dataInfo && (
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -416,7 +453,7 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
                   </div>
                 </div>
                 <div className="mt-4 text-xs text-muted-foreground">
-                  <strong>Note:</strong> Colors show relative performance within the selected tokens and timeframes. Higher Omega and Sharpe ratios indicate better risk-adjusted returns.
+                  <strong>Note:</strong> Colors show relative performance within the selected tokens and timeframes. Higher Omega, Sharpe, and Sortino ratios indicate better risk-adjusted returns.
                 </div>
               </div>
             </div>
@@ -465,6 +502,10 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
               timeframes={timeframes}
             />
             <SharpeRatioTable
+              tokens={tokenData}
+              timeframes={timeframes}
+            />
+            <SortinoRatioTable
               tokens={tokenData}
               timeframes={timeframes}
             />
