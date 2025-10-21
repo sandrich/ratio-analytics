@@ -1,0 +1,33 @@
+{
+  "last_updated": "2025-10-21T06:42:46.522381",
+  "total_tokens": 26,
+  "available_tokens": [
+    "bitcoin",
+    "ethereum",
+    "binancecoin",
+    "xrp",
+    "solana",
+    "cardano",
+    "dogecoin",
+    "tron",
+    "chainlink",
+    "polkadot",
+    "litecoin",
+    "bitcoin-cash",
+    "stellar",
+    "ethereum-classic",
+    "monero",
+    "avalanche",
+    "shiba-inu",
+    "cosmos",
+    "near",
+    "algorand",
+    "vechain",
+    "internet-computer",
+    "hedera",
+    "quant",
+    "filecoin",
+    "aave"
+  ],
+  "data_source": "Yahoo Finance"
+}
