@@ -37,7 +37,7 @@ export class CryptoDataService {
     }
 
     try {
-      const response = await fetch('/data/index.json');
+      const response = await fetch('./data/index.json');
       if (!response.ok) {
         throw new Error(`Failed to load data index: ${response.status}`);
       }
@@ -61,7 +61,7 @@ export class CryptoDataService {
     }
 
     try {
-      const response = await fetch(`/data/${cryptoId}.json`);
+      const response = await fetch(`./data/${cryptoId}.json`);
       if (!response.ok) {
         throw new Error(`Token data not found: ${cryptoId}`);
       }
