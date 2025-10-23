@@ -42,8 +42,7 @@ jobs:
           
       - name: Run crypto data update
         run: |
-          cd scripts
-          python download-historical-data.py
+          python scripts/download-historical-data.py
           
       - name: Check for changes
         id: verify-changed-files
