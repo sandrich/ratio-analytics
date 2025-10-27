@@ -188,9 +188,3 @@ schedule:
 ## 📄 License
 
 MIT License - see LICENSE file for details.
-
-## 💝 Donations
-
-If this project helps your research or decision-making and you'd like to support it, crypto tips are welcome. Thank you — every bit helps keep the service running and improving.
-
-- Address: `0x4a95631d36d86d839a8d9e39322c86912212e58d`
