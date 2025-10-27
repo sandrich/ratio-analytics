@@ -23,6 +23,17 @@ export interface UserPreferences {
   colorScheme: 'default' | 'colorblind';
 }
 
+export interface AnnualizationConfig {
+  tradingDaysPerYear: number;
+  description: string;
+}
+
+export const ANNUALIZATION_PRESETS: Record<string, AnnualizationConfig> = {
+  CRYPTO: { tradingDaysPerYear: 365, description: 'Crypto markets (24/7 trading)' },
+  STOCKS: { tradingDaysPerYear: 252, description: 'Stock markets (252 trading days)' },
+  CUSTOM: { tradingDaysPerYear: 365, description: 'Custom configuration' }
+};
+
 export interface TimeframeConfig {
   days: number;
   label: string;
@@ -46,3 +57,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   API_RATE_LIMIT_MS: 1000,
   MAX_RETRIES: 3
 };
+
+export const DEFAULT_ANNUALIZATION: AnnualizationConfig = ANNUALIZATION_PRESETS.CRYPTO;

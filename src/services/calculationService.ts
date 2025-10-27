@@ -71,9 +71,10 @@ export class CalculationService {
    * 
    * @param returns Array of return values (as decimals)
    * @param riskFreeRate Risk-free rate (default: 0.02 for 2% annual)
+   * @param tradingDaysPerYear Number of trading days per year (default: 365 for crypto)
    * @returns Sortino ratio value
    */
-  static calculateSortinoRatio(returns: number[], riskFreeRate: number = 0.02): number {
+  static calculateSortinoRatio(returns: number[], riskFreeRate: number = 0.02, tradingDaysPerYear: number = 365): number {
     // Handle edge cases
     if (!returns || returns.length === 0) {
       throw new Error('Returns array cannot be empty');
@@ -98,11 +99,12 @@ export class CalculationService {
     // Calculate mean return
     const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
     
-    // Annualize the mean return (assuming daily returns, multiply by ~252 trading days)
-    const annualizedReturn = meanReturn * 252;
+    // Annualize the mean return (multiply by trading days per year)
+    const annualizedReturn = meanReturn * tradingDaysPerYear;
     
     // Calculate downside deviation (only negative returns below the risk-free rate)
-    const downsideReturns = validReturns.filter(r => r < riskFreeRate / 252); // Convert annual risk-free rate to daily
+    const dailyRiskFreeRate = riskFreeRate / tradingDaysPerYear;
+    const downsideReturns = validReturns.filter(r => r < dailyRiskFreeRate);
     
     if (downsideReturns.length === 0) {
       // If no downside returns, Sortino ratio is infinite (or very high)
@@ -111,14 +113,14 @@ export class CalculationService {
     
     // Calculate downside deviation
     const downsideVariance = downsideReturns.reduce((sum, r) => {
-      const diff = r - (riskFreeRate / 252); // Daily risk-free rate
+      const diff = r - dailyRiskFreeRate;
       return sum + (diff * diff);
     }, 0) / downsideReturns.length;
     
     const downsideDeviation = Math.sqrt(downsideVariance);
     
-    // Annualize the downside deviation (multiply by sqrt of 252 trading days)
-    const annualizedDownsideDeviation = downsideDeviation * Math.sqrt(252);
+    // Annualize the downside deviation
+    const annualizedDownsideDeviation = downsideDeviation * Math.sqrt(tradingDaysPerYear);
     
     // Handle edge case where downside deviation is zero
     if (annualizedDownsideDeviation === 0) {
@@ -137,9 +139,10 @@ export class CalculationService {
    * 
    * @param returns Array of return values (as decimals)
    * @param riskFreeRate Risk-free rate (default: 0.02 for 2% annual)
+   * @param tradingDaysPerYear Number of trading days per year (default: 365 for crypto)
    * @returns Sharpe ratio value
    */
-  static calculateSharpeRatio(returns: number[], riskFreeRate: number = 0.02): number {
+  static calculateSharpeRatio(returns: number[], riskFreeRate: number = 0.02, tradingDaysPerYear: number = 365): number {
     // Handle edge cases
     if (!returns || returns.length === 0) {
       throw new Error('Returns array cannot be empty');
@@ -164,8 +167,8 @@ export class CalculationService {
     // Calculate mean return
     const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
     
-    // Annualize the mean return (assuming daily returns, multiply by ~252 trading days)
-    const annualizedReturn = meanReturn * 252;
+    // Annualize the mean return
+    const annualizedReturn = meanReturn * tradingDaysPerYear;
     
     // Calculate standard deviation
     const variance = validReturns.reduce((sum, r) => {
@@ -175,8 +178,8 @@ export class CalculationService {
     
     const standardDeviation = Math.sqrt(variance);
     
-    // Annualize the standard deviation (multiply by sqrt of 252 trading days)
-    const annualizedVolatility = standardDeviation * Math.sqrt(252);
+    // Annualize the standard deviation
+    const annualizedVolatility = standardDeviation * Math.sqrt(tradingDaysPerYear);
     
     // Handle edge case where volatility is zero
     if (annualizedVolatility === 0) {
@@ -193,9 +196,10 @@ export class CalculationService {
    * Calculate volatility (standard deviation) from returns
    * 
    * @param returns Array of return values
+   * @param tradingDaysPerYear Number of trading days per year (default: 365 for crypto)
    * @returns Annualized volatility
    */
-  static calculateVolatility(returns: number[]): number {
+  static calculateVolatility(returns: number[], tradingDaysPerYear: number = 365): number {
     if (!returns || returns.length < 2) {
       return 0;
     }
@@ -217,8 +221,8 @@ export class CalculationService {
     
     const standardDeviation = Math.sqrt(variance);
     
-    // Annualize the volatility (assuming daily returns)
-    return standardDeviation * Math.sqrt(252);
+    // Annualize the volatility
+    return standardDeviation * Math.sqrt(tradingDaysPerYear);
   }
 
   /**
@@ -408,13 +412,15 @@ export class CalculationService {
    * @param timeframe Number of days for the analysis
    * @param threshold Threshold for Omega ratio calculation
    * @param riskFreeRate Risk-free rate for Sharpe ratio calculation
+   * @param tradingDaysPerYear Number of trading days per year (default: 365 for crypto)
    * @returns Complete performance metrics
    */
   static calculatePerformanceMetrics(
     prices: number[], 
     timeframe: number,
     threshold: number = 0,
-    riskFreeRate: number = 0.02
+    riskFreeRate: number = 0.02,
+    tradingDaysPerYear: number = 365
   ): PerformanceMetrics {
     // Take the last 'timeframe' prices
     const relevantPrices = prices.slice(-timeframe);
@@ -428,9 +434,9 @@ export class CalculationService {
     
     // Calculate ratios
     const omegaRatio = this.calculateOmegaRatio(returns, threshold);
-    const sharpeRatio = this.calculateSharpeRatio(returns, riskFreeRate);
-    const sortinoRatio = this.calculateSortinoRatio(returns, riskFreeRate);
-    const volatility = this.calculateVolatility(returns);
+    const sharpeRatio = this.calculateSharpeRatio(returns, riskFreeRate, tradingDaysPerYear);
+    const sortinoRatio = this.calculateSortinoRatio(returns, riskFreeRate, tradingDaysPerYear);
+    const volatility = this.calculateVolatility(returns, tradingDaysPerYear);
     
     // Calculate maximum drawdown
     const drawdown = this.calculateMaxDrawdown(relevantPrices);

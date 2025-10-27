@@ -21,6 +21,7 @@ import { SortinoRatioTable } from './SortinoRatioTable';
 import { TokenSelectionPanel } from './TokenSelectionPanel';
 import { TimeframeConfiguration } from './TimeframeConfiguration';
 import { Button } from './ui/button';
+import { DEFAULT_ANNUALIZATION } from '../types/config';
 
 // Default configuration
 const DEFAULT_TIMEFRAMES = [90, 180, 365, 990, 2000];
@@ -158,7 +159,10 @@ export const CryptoAnalyzer: React.FC<CryptoAnalyzerProps> = ({
             
             const metrics = CalculationService.calculatePerformanceMetrics(
               priceValues,
-              timeframe
+              timeframe,
+              0, // threshold
+              0.02, // riskFreeRate
+              DEFAULT_ANNUALIZATION.tradingDaysPerYear // tradingDaysPerYear (365 for crypto)
             );
             
             console.log(`DEBUG: ${tokenId} ${timeframe}d - Omega: ${metrics.omegaRatio}, Sharpe: ${metrics.sharpeRatio}, Sortino: ${metrics.sortinoRatio}`);
