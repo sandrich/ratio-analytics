@@ -102,20 +102,18 @@ export class CalculationService {
     // Annualize the mean return (multiply by trading days per year)
     const annualizedReturn = meanReturn * tradingDaysPerYear;
     
-    // Calculate downside deviation (only negative returns below the risk-free rate)
-    const dailyRiskFreeRate = riskFreeRate / tradingDaysPerYear;
-    const downsideReturns = validReturns.filter(r => r < dailyRiskFreeRate);
-    
-    if (downsideReturns.length === 0) {
-      // If no downside returns, Sortino ratio is infinite (or very high)
-      return annualizedReturn > riskFreeRate ? Number.POSITIVE_INFINITY : 0;
-    }
-    
     // Calculate downside deviation
-    const downsideVariance = downsideReturns.reduce((sum, r) => {
+    const dailyRiskFreeRate = riskFreeRate / tradingDaysPerYear;
+    
+    // Calculate the sum of squared negative deviations (positive deviations contribute 0)
+    const downsideVarianceSum = validReturns.reduce((sum, r) => {
       const diff = r - dailyRiskFreeRate;
-      return sum + (diff * diff);
-    }, 0) / downsideReturns.length;
+      // Only square negative differences (downside risk), positive ones contribute 0
+      return sum + (diff < 0 ? diff * diff : 0);
+    }, 0);
+    
+    // Divide by the TOTAL number of observations (not just negative returns)
+    const downsideVariance = downsideVarianceSum / validReturns.length;
     
     const downsideDeviation = Math.sqrt(downsideVariance);
     
